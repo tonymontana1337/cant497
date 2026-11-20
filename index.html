@@ -9,7 +9,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
-  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendEmailVerification } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
   import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -29,27 +29,37 @@
 
   window.firebaseAuth = auth;
   window.firebaseDb = db;
-  window.authFns = { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged };
+  window.authFns = { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendEmailVerification };
   window.dbFns = { doc, getDoc, setDoc };
 </script>
 
 <style>
 /* ==== ТЕМА ======================================================== */
+@property --bg{syntax:'<color>';inherits:true;initial-value:#ffffff}
+@property --accent-1{syntax:'<color>';inherits:true;initial-value:#1d1d1f}
+@property --accent-2{syntax:'<color>';inherits:true;initial-value:#8e8e93}
+@property --accent-3{syntax:'<color>';inherits:true;initial-value:#1d1d1f}
+@property --glow-1{syntax:'<color>';inherits:true;initial-value:rgba(29,29,31,.03)}
+@property --glow-2{syntax:'<color>';inherits:true;initial-value:rgba(29,29,31,.03)}
+@property --glow-3{syntax:'<color>';inherits:true;initial-value:rgba(29,29,31,.03)}
 :root{
   --bg:#ffffff;
   --text:#1d1d1f;
   --muted:#86868b;
   --line:#e8e8ed;
   --soft:#f5f5f7;
-  --accent-1:#7c5cff;
-  --accent-2:#22d3ee;
-  --accent-3:#ff7ab8;
-  --glow-1:rgba(124,92,255,.10);
-  --glow-2:rgba(34,211,238,.10);
-  --glow-3:rgba(255,122,184,.10);
+  --accent-1:#1d1d1f;
+  --accent-2:#8e8e93;
+  --accent-3:#1d1d1f;
+  --glow-1:rgba(29,29,31,.03);
+  --glow-2:rgba(29,29,31,.03);
+  --glow-3:rgba(29,29,31,.03);
+  --dot:#3aa7f5;
   --user-bubble:#1d1d1f;
   --radius:22px;
   --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","Inter","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  /* плавная смена цветов темы */
+  transition:--bg .9s ease,--accent-1 .9s ease,--accent-2 .9s ease,--accent-3 .9s ease,--glow-1 .9s ease,--glow-2 .9s ease,--glow-3 .9s ease;
 }
 
 *{box-sizing:border-box;margin:0;padding:0}
@@ -68,10 +78,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .glow{
   position:fixed;inset:0;pointer-events:none;z-index:0;
   background:
-    radial-gradient(50vmax 50vmax at 15% 15%, var(--glow-1), transparent 65%),
-    radial-gradient(45vmax 45vmax at 85% 20%, var(--glow-2), transparent 65%),
-    radial-gradient(55vmax 55vmax at 50% 95%, var(--glow-3), transparent 65%);
-  transition:all .9s ease;
+    radial-gradient(70vmax 40vmax at 50% -8%, var(--glow-2), transparent 70%),
+    radial-gradient(70vmax 45vmax at 50% 110%, var(--glow-1), transparent 70%),
+    radial-gradient(40vmax 40vmax at 100% 50%, var(--glow-3), transparent 70%);
 }
 
 .screen{
@@ -90,8 +99,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   line-height:1;
 }
 .logo span{
-  background:linear-gradient(135deg,var(--accent-1),var(--accent-2),var(--accent-3));
-  -webkit-background-clip:text;background-clip:text;color:transparent;
+  color:var(--dot);
 }
 .tagline{
   margin-top:16px;color:var(--muted);
@@ -104,22 +112,34 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   padding:15px 38px;border-radius:999px;
   background:var(--text);color:#fff;
   font-size:16px;font-weight:500;letter-spacing:-0.01em;
-  transition:transform .25s ease, box-shadow .25s ease, background .6s ease;
+  overflow:hidden;isolation:isolate;
+  transition:transform .3s ease, box-shadow .3s ease;
   box-shadow:0 8px 30px rgba(0,0,0,.12);
 }
-.cta:hover{transform:translateX(-50%) translateY(-2px);box-shadow:0 14px 40px rgba(0,0,0,.18)}
+.cta::after{
+  content:"";position:absolute;inset:0;pointer-events:none;opacity:0;
+  background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.6) 50%,transparent 65%);
+  transform:translateX(-130%);
+}
+.cta:hover,.cta:focus-visible{
+  transform:translateX(-50%) translateY(-3px);outline:none;
+  text-shadow:0 0 14px rgba(255,255,255,.85);
+  box-shadow:0 16px 40px rgba(0,0,0,.2), inset 0 0 22px rgba(255,255,255,.22), inset 0 0 0 1px rgba(255,255,255,.28);
+}
+.cta:hover::after,.cta:focus-visible::after{opacity:1;animation:sheen 1.8s ease-in-out infinite}
+@keyframes sheen{0%{transform:translateX(-130%)}60%,100%{transform:translateX(130%)}}
 .cta:active{transform:translateX(-50%) scale(.97)}
 
 /* ==== ЧАТ ========================================================= */
 #chat{align-items:center}
 .chat-top{
-  width:100%;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;
+  width:100%;padding:16px 72px 16px 24px;display:flex;align-items:center;justify-content:space-between;
   background:rgba(255,255,255,.65);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
   border-bottom:1px solid rgba(0,0,0,.06);
   transition:border-color .6s ease;
 }
 .chat-top .brand{font-size:19px;font-weight:600;letter-spacing:-0.03em;cursor:pointer}
-.chat-top .brand span{color:var(--accent-1);transition:color .6s ease}
+.chat-top .brand span{color:var(--dot)}
 .chat-top .right{display:flex;align-items:center;gap:12px}
 .counter{color:var(--muted);font-size:13px;font-weight:500}
 .pill{
@@ -172,7 +192,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .card:hover{
   transform:translateY(-2px);
   background:#fff;
-  box-shadow:0 12px 32px var(--glow-1);
+  box-shadow:0 12px 32px rgba(0,0,0,.07);
   border-color:var(--accent-1);
 }
 .thumb{
@@ -188,9 +208,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .card .price{font-weight:600;font-size:18px}
 .badge{
   display:inline-block;margin-top:6px;padding:3px 10px;border-radius:999px;
-  font-size:12px;font-weight:600;color:#fff;
-  background:linear-gradient(135deg,var(--accent-1),var(--accent-2));
-  transition:background .7s ease;
+  font-size:12px;font-weight:600;
+  color:color-mix(in srgb,var(--accent-1) 65%,#000);
+  background:color-mix(in srgb,var(--accent-1) 13%,#fff);
 }
 
 /* ==== ПОЛЕ ВВОДА ================================================== */
@@ -201,12 +221,12 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   padding:8px 8px 8px 22px;border-radius:999px;
   background:rgba(255,255,255,.92);backdrop-filter:blur(14px);
   border:1px solid rgba(0,0,0,.09);
-  box-shadow:0 8px 30px var(--glow-1);
+  box-shadow:0 8px 30px rgba(0,0,0,.06);
   transition:border-color .5s ease, box-shadow .5s ease;
 }
 .composer form:focus-within{
   border-color:var(--accent-1);
-  box-shadow:0 10px 36px var(--glow-1);
+  box-shadow:0 10px 36px color-mix(in srgb,var(--accent-1) 14%,transparent);
 }
 .composer input{
   flex:1;border:none;outline:none;background:none;
@@ -264,6 +284,24 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .perks li::before{content:"✓";margin-right:10px;color:var(--accent-1);font-weight:700}
 .demo{color:var(--muted);font-size:12px;margin-top:12px}
 
+[hidden]{display:none!important}
+.lang{position:fixed;top:max(12px,env(safe-area-inset-top));right:18px;z-index:6}
+.globe{
+  width:42px;height:42px;border-radius:50%;display:grid;place-items:center;
+  border:1px solid rgba(0,0,0,.09);background:rgba(255,255,255,.85);backdrop-filter:blur(14px);
+  color:var(--text);transition:border-color .3s, transform .2s;
+}
+.globe:hover{border-color:var(--accent-1);transform:scale(1.05)}
+.lang-menu{
+  position:absolute;right:0;top:50px;min-width:160px;padding:6px;border-radius:18px;
+  background:#fff;border:1px solid var(--line);box-shadow:0 18px 50px rgba(0,0,0,.12);
+  animation:rise .25s ease both;
+}
+.lang-menu button{display:block;width:100%;text-align:left;padding:10px 14px;border-radius:12px;font-size:15px}
+.lang-menu button:hover{background:var(--soft)}
+.lang-menu button.on{color:var(--accent-1);font-weight:600}
+.modal.pay{padding:40px 28px 28px}
+.modal.pay .plan-price{margin-top:0}
 @media (max-width:560px){
   .card{flex-wrap:wrap}
   .card .side{width:100%;text-align:left;display:flex;justify-content:space-between;align-items:center}
@@ -276,28 +314,35 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 <body>
 <div class="glow"></div>
 
+<div class="lang" id="lang">
+  <button class="globe" id="langBtn" aria-label="Language" aria-haspopup="true">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.7 3.9 5.7 3.9 9s-1.3 6.3-3.9 9c-2.6-2.7-3.9-5.7-3.9-9S9.4 5.7 12 3z"/></svg>
+  </button>
+  <div class="lang-menu" id="langMenu" hidden></div>
+</div>
+
 <section id="landing" class="screen">
   <h1 class="logo">Findly<span>.</span></h1>
-  <p class="tagline">Tell us what you need. And we will find it.</p>
-  <button class="cta" id="startBtn">Try</button>
+  <p class="tagline" data-i18n="tagline"></p>
+  <button class="cta" id="startBtn" data-i18n="try"></button>
 </section>
 
 <section id="chat" class="screen hidden">
   <header class="chat-top">
-    <div class="brand" id="brandBtn" title="Home">Findly<span>.</span></div>
+    <div class="brand" id="brandBtn">Findly<span>.</span></div>
     <div class="right">
       <span class="counter" id="counter"></span>
-      <button class="pill" id="accountBtn">Sign in</button>
+      <button class="pill" id="accountBtn"></button>
     </div>
   </header>
 
   <div class="messages" id="messages">
-    <div class="hero" id="hero">What are you looking for?</div>
+    <div class="hero" id="hero" data-i18n="hero"></div>
   </div>
 
   <div class="composer">
     <form id="form" autocomplete="off">
-      <input id="input" type="text" aria-label="What are you looking for?" />
+      <input id="input" type="text" />
       <span class="ph" id="ph"></span>
       <button class="send" id="sendBtn" type="submit" aria-label="Send">↑</button>
     </form>
@@ -307,195 +352,222 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 <div class="overlay" id="authModal">
   <div class="modal">
     <button class="x" data-close="authModal" aria-label="Close">×</button>
-    <h2 id="authTitle">Create your account</h2>
-    <p class="sub" id="authNote"></p>
-    <form id="authForm" novalidate>
-      <input class="field" id="authEmail" type="email" placeholder="Email" autocomplete="email">
-      <input class="field" id="authPass" type="password" placeholder="Password (8+ characters)" autocomplete="new-password">
-      <p class="err" id="authError"></p>
-      <button class="btn" id="authSubmit" type="submit">Create account</button>
-    </form>
-    <button class="link" id="authSwitch">Already have an account? Sign in</button>
+
+    <div id="authStep">
+      <h2 id="authTitle"></h2>
+      <p class="sub" id="authNote"></p>
+      <form id="authForm" novalidate>
+        <input class="field" id="authEmail" type="email" data-i18n-ph="email" autocomplete="email">
+        <input class="field" id="authPass" type="password" data-i18n-ph="pass" autocomplete="new-password">
+        <p class="err" id="authError"></p>
+        <button class="btn" id="authSubmit" type="submit"></button>
+      </form>
+      <button class="link" id="authSwitch"></button>
+    </div>
+
+    <div id="verifyStep" hidden>
+      <h2 data-i18n="verifyTitle"></h2>
+      <p class="sub" id="verifyText"></p>
+      <p class="err" id="verifyErr"></p>
+      <button class="btn" id="verifyDone" data-i18n="verifyDone"></button>
+      <button class="link" id="verifyResend" data-i18n="verifyResend"></button><br>
+      <button class="link" id="verifyOther" data-i18n="verifyOther"></button>
+    </div>
   </div>
 </div>
 
 <div class="overlay" id="payModal">
-  <div class="modal">
+  <div class="modal pay">
     <button class="x" data-close="payModal" aria-label="Close">×</button>
-    <h2>Keep finding</h2>
-    <p class="sub">You’ve used all your 5 free searches.</p>
-    <div class="plan-price"><span id="planPrice"></span> <small>/ month</small></div>
-    <ul class="perks">
-      <li>Unlimited searches</li>
-      <li>Best-value ranking</li>
-      <li>Adaptive color vibes</li>
-    </ul>
-    <button class="btn grad" id="subscribeBtn">Subscribe</button>
-    <button class="link" data-close="payModal">Not now</button>
-    <p class="demo">Demo mode: payment is not connected yet.</p>
+    <div class="plan-price"><span id="planPrice"></span> <small data-i18n="perMonth"></small></div>
+    <button class="btn" id="subscribeBtn" data-i18n="subscribe"></button>
   </div>
 </div>
 
 <script>
-/* ==== НАСТРОЙКИ САЙТА =============================================== */
+const $ = id => document.getElementById(id);
+
+/* ==== НАСТРОЙКИ ===================================================== */
 const CONFIG = {
   fakeDelayMs: 1100,
   currency: "€",
-  placeholders: [
-    "Winter black jacket",
-    "I need brown pink boots",
-    "Hmm blue jeans",
-    "Umm gold t-shirt",
-    "Maybee red hoodie",
-  ],
   placeholderEveryMs: 2800,
-  freeGuest: 5,
-  freeWithAccount: 5,
-  price: "$2.99",
+  freeTotal: 5,          // всего 5 бесплатных поисков (гость + аккаунт вместе)
+  price: "$2",
 };
 
-/* ==== УМНАЯ ПОДСВЕТКА САЙТА ПОД ЦВЕТА ЗАПРОСА ======================= */
-// Словарь цветов: основной акцент, второй оттенок, мягкий пастельный оттенок фона
+/* ==== ЯЗЫКИ ========================================================= */
+const I18N = {
+en:{name:"English",tagline:"Tell us what you need. And we will find it.",try:"Try",hero:"What are you looking for?",free:"{n} free left",signIn:"Sign in",verifyEmail:"Verify email",home:"Home",
+ createTitle:"Create your account",signinTitle:"Welcome back",gateNote:"Create an account to continue.",email:"Email",pass:"Password (8+ characters)",create:"Create account",signinBtn:"Sign in",
+ toSignin:"Already have an account? Sign in",toSignup:"New here? Create account",badEmail:"Enter a valid email.",shortPass:"Password must be at least 8 characters.",generic:"Something went wrong.",
+ exists:"This email is already registered. Try signing in.",badCred:"Wrong email or password.",tooMany:"Too many attempts. Try again later.",
+ verifyTitle:"Check your email",verifySent:"We sent a confirmation link to {email}. Open it, then come back here.",verifyDone:"I’ve confirmed",verifyResend:"Resend email",verifyNo:"Email isn’t confirmed yet.",verifyResent:"Email sent again.",verifyOther:"Use a different email",
+ signOutQ:"Sign out?",subscribe:"Subscribe",perMonth:"/ month",reply:"Here are the best picks for “{q}”.",best:"Best Match",premium:"Premium Pick",budget:"Budget Deal",
+ why1:"Great condition, top-rated seller, priced 30% below market.",why2:"Best build quality in this range, verified authentic.",why3:"Cheapest solid option, fast shipping available.",wrong:"Something went wrong. Please try again.",
+ ph:["Winter black jacket","I need brown pink boots","Hmm blue jeans","Umm gold t-shirt","Maybe red hoodie"]},
+ru:{name:"Русский",tagline:"Скажи, что тебе нужно. Мы найдём.",try:"Попробовать",hero:"Что ищем?",free:"Осталось бесплатно: {n}",signIn:"Войти",verifyEmail:"Подтвердить почту",home:"Главная",
+ createTitle:"Создайте аккаунт",signinTitle:"С возвращением",gateNote:"Создайте аккаунт, чтобы продолжить.",email:"Почта",pass:"Пароль (от 8 символов)",create:"Создать аккаунт",signinBtn:"Войти",
+ toSignin:"Уже есть аккаунт? Войти",toSignup:"Впервые здесь? Создать аккаунт",badEmail:"Введите корректную почту.",shortPass:"Пароль — минимум 8 символов.",generic:"Что-то пошло не так.",
+ exists:"Эта почта уже зарегистрирована. Попробуйте войти.",badCred:"Неверная почта или пароль.",tooMany:"Слишком много попыток. Попробуйте позже.",
+ verifyTitle:"Проверьте почту",verifySent:"Мы отправили ссылку для подтверждения на {email}. Откройте её и вернитесь сюда.",verifyDone:"Я подтвердил(а)",verifyResend:"Отправить ещё раз",verifyNo:"Почта пока не подтверждена.",verifyResent:"Письмо отправлено снова.",verifyOther:"Другая почта",
+ signOutQ:"Выйти?",subscribe:"Подписаться",perMonth:"/ мес",reply:"Лучшие варианты по запросу «{q}».",best:"Лучшее совпадение",premium:"Премиум",budget:"Выгодно",
+ why1:"Отличное состояние, продавец с высоким рейтингом, цена на 30% ниже рынка.",why2:"Лучшее качество в этом диапазоне, подлинность подтверждена.",why3:"Самый дешёвый надёжный вариант, возможна быстрая доставка.",wrong:"Что-то пошло не так. Попробуйте ещё раз.",
+ ph:["Зимняя чёрная куртка","Нужны коричнево-розовые ботинки","Хм, синие джинсы","Эм, золотая футболка","Может, красное худи"]},
+uk:{name:"Українська",tagline:"Скажи, що тобі потрібно. Ми знайдемо.",try:"Спробувати",hero:"Що шукаємо?",free:"Залишилось безкоштовно: {n}",signIn:"Увійти",verifyEmail:"Підтвердити пошту",home:"Головна",
+ createTitle:"Створіть акаунт",signinTitle:"З поверненням",gateNote:"Створіть акаунт, щоб продовжити.",email:"Пошта",pass:"Пароль (від 8 символів)",create:"Створити акаунт",signinBtn:"Увійти",
+ toSignin:"Вже є акаунт? Увійти",toSignup:"Вперше тут? Створити акаунт",badEmail:"Введіть коректну пошту.",shortPass:"Пароль — щонайменше 8 символів.",generic:"Щось пішло не так.",
+ exists:"Ця пошта вже зареєстрована. Спробуйте увійти.",badCred:"Невірна пошта або пароль.",tooMany:"Забагато спроб. Спробуйте пізніше.",
+ verifyTitle:"Перевірте пошту",verifySent:"Ми надіслали посилання для підтвердження на {email}. Відкрийте його й поверніться сюди.",verifyDone:"Я підтвердив(ла)",verifyResend:"Надіслати ще раз",verifyNo:"Пошту ще не підтверджено.",verifyResent:"Лист надіслано знову.",verifyOther:"Інша пошта",
+ signOutQ:"Вийти?",subscribe:"Підписатися",perMonth:"/ міс",reply:"Найкращі варіанти за запитом «{q}».",best:"Найкращий збіг",premium:"Преміум",budget:"Вигідно",
+ why1:"Чудовий стан, продавець із високим рейтингом, ціна на 30% нижча за ринкову.",why2:"Найкраща якість у цьому діапазоні, справжність підтверджено.",why3:"Найдешевший надійний варіант, можлива швидка доставка.",wrong:"Щось пішло не так. Спробуйте ще раз.",
+ ph:["Зимова чорна куртка","Потрібні коричнево-рожеві черевики","Хм, сині джинси","Ем, золота футболка","Може, червоне худі"]},
+es:{name:"Español",tagline:"Dinos qué necesitas. Y lo encontramos.",try:"Probar",hero:"¿Qué estás buscando?",free:"{n} gratis restantes",signIn:"Entrar",verifyEmail:"Verificar correo",home:"Inicio",
+ createTitle:"Crea tu cuenta",signinTitle:"Bienvenido de nuevo",gateNote:"Crea una cuenta para continuar.",email:"Correo",pass:"Contraseña (mín. 8 caracteres)",create:"Crear cuenta",signinBtn:"Entrar",
+ toSignin:"¿Ya tienes cuenta? Entra",toSignup:"¿Nuevo aquí? Crea una cuenta",badEmail:"Introduce un correo válido.",shortPass:"La contraseña debe tener al menos 8 caracteres.",generic:"Algo salió mal.",
+ exists:"Este correo ya está registrado. Prueba a entrar.",badCred:"Correo o contraseña incorrectos.",tooMany:"Demasiados intentos. Inténtalo más tarde.",
+ verifyTitle:"Revisa tu correo",verifySent:"Enviamos un enlace de confirmación a {email}. Ábrelo y vuelve aquí.",verifyDone:"Ya lo confirmé",verifyResend:"Reenviar correo",verifyNo:"El correo aún no está confirmado.",verifyResent:"Correo enviado de nuevo.",verifyOther:"Usar otro correo",
+ signOutQ:"¿Cerrar sesión?",subscribe:"Suscribirse",perMonth:"/ mes",reply:"Las mejores opciones para «{q}».",best:"Mejor coincidencia",premium:"Opción premium",budget:"Ganga",
+ why1:"Excelente estado, vendedor muy valorado y un 30 % por debajo del mercado.",why2:"La mejor calidad de este rango, autenticidad verificada.",why3:"La opción fiable más barata, con envío rápido.",wrong:"Algo salió mal. Inténtalo de nuevo.",
+ ph:["Chaqueta negra de invierno","Necesito botas marrón rosa","Mmm, vaqueros azules","Eh, camiseta dorada","Quizá una sudadera roja"]},
+de:{name:"Deutsch",tagline:"Sag uns, was du brauchst. Wir finden es.",try:"Los",hero:"Wonach suchst du?",free:"Noch {n} gratis",signIn:"Anmelden",verifyEmail:"E-Mail bestätigen",home:"Start",
+ createTitle:"Konto erstellen",signinTitle:"Willkommen zurück",gateNote:"Erstelle ein Konto, um fortzufahren.",email:"E-Mail",pass:"Passwort (mind. 8 Zeichen)",create:"Konto erstellen",signinBtn:"Anmelden",
+ toSignin:"Schon ein Konto? Anmelden",toSignup:"Neu hier? Konto erstellen",badEmail:"Gib eine gültige E-Mail ein.",shortPass:"Das Passwort braucht mindestens 8 Zeichen.",generic:"Etwas ist schiefgelaufen.",
+ exists:"Diese E-Mail ist bereits registriert. Melde dich an.",badCred:"E-Mail oder Passwort falsch.",tooMany:"Zu viele Versuche. Versuch es später erneut.",
+ verifyTitle:"Prüfe dein Postfach",verifySent:"Wir haben einen Bestätigungslink an {email} gesendet. Öffne ihn und komm dann zurück.",verifyDone:"Ich habe bestätigt",verifyResend:"Erneut senden",verifyNo:"Die E-Mail ist noch nicht bestätigt.",verifyResent:"E-Mail erneut gesendet.",verifyOther:"Andere E-Mail",
+ signOutQ:"Abmelden?",subscribe:"Abonnieren",perMonth:"/ Monat",reply:"Die besten Treffer für „{q}“.",best:"Beste Übereinstimmung",premium:"Premium-Wahl",budget:"Schnäppchen",
+ why1:"Top Zustand, bestbewerteter Verkäufer, 30 % unter Marktpreis.",why2:"Beste Qualität in dieser Preisklasse, Echtheit geprüft.",why3:"Günstigste solide Option, schneller Versand möglich.",wrong:"Etwas ist schiefgelaufen. Bitte versuch es erneut.",
+ ph:["Schwarze Winterjacke","Ich brauche braun-rosa Stiefel","Hmm, blaue Jeans","Ähm, goldenes T-Shirt","Vielleicht ein rotes Hoodie"]},
+fr:{name:"Français",tagline:"Dis-nous ce qu’il te faut. On le trouve.",try:"Essayer",hero:"Que cherches-tu ?",free:"{n} gratuites restantes",signIn:"Connexion",verifyEmail:"Vérifier l’e-mail",home:"Accueil",
+ createTitle:"Crée ton compte",signinTitle:"Content de te revoir",gateNote:"Crée un compte pour continuer.",email:"E-mail",pass:"Mot de passe (8 caractères min.)",create:"Créer un compte",signinBtn:"Connexion",
+ toSignin:"Déjà un compte ? Connecte-toi",toSignup:"Nouveau ici ? Crée un compte",badEmail:"Saisis un e-mail valide.",shortPass:"Le mot de passe doit faire au moins 8 caractères.",generic:"Une erreur est survenue.",
+ exists:"Cet e-mail est déjà utilisé. Essaie de te connecter.",badCred:"E-mail ou mot de passe incorrect.",tooMany:"Trop de tentatives. Réessaie plus tard.",
+ verifyTitle:"Vérifie ta boîte mail",verifySent:"Nous avons envoyé un lien de confirmation à {email}. Ouvre-le puis reviens ici.",verifyDone:"J’ai confirmé",verifyResend:"Renvoyer l’e-mail",verifyNo:"L’e-mail n’est pas encore confirmé.",verifyResent:"E-mail renvoyé.",verifyOther:"Autre e-mail",
+ signOutQ:"Se déconnecter ?",subscribe:"S’abonner",perMonth:"/ mois",reply:"Les meilleures options pour « {q} ».",best:"Meilleur choix",premium:"Choix premium",budget:"Bon plan",
+ why1:"Excellent état, vendeur très bien noté, 30 % sous le prix du marché.",why2:"La meilleure qualité de cette gamme, authenticité vérifiée.",why3:"L’option fiable la moins chère, livraison rapide possible.",wrong:"Une erreur est survenue. Réessaie.",
+ ph:["Veste noire d’hiver","Il me faut des bottes marron rose","Hmm, jean bleu","Euh, t-shirt doré","Peut-être un sweat rouge"]},
+zh:{name:"中文",tagline:"告诉我们你需要什么，我们来找。",try:"试试",hero:"你在找什么？",free:"剩余 {n} 次免费",signIn:"登录",verifyEmail:"验证邮箱",home:"首页",
+ createTitle:"创建账号",signinTitle:"欢迎回来",gateNote:"创建账号以继续。",email:"邮箱",pass:"密码（至少 8 位）",create:"创建账号",signinBtn:"登录",
+ toSignin:"已有账号？登录",toSignup:"第一次来？创建账号",badEmail:"请输入有效邮箱。",shortPass:"密码至少 8 位。",generic:"出错了。",
+ exists:"该邮箱已注册，请直接登录。",badCred:"邮箱或密码错误。",tooMany:"尝试次数过多，请稍后再试。",
+ verifyTitle:"请查收邮件",verifySent:"我们已向 {email} 发送确认链接。打开链接后回到这里。",verifyDone:"我已确认",verifyResend:"重新发送",verifyNo:"邮箱尚未确认。",verifyResent:"邮件已重新发送。",verifyOther:"换一个邮箱",
+ signOutQ:"退出登录？",subscribe:"订阅",perMonth:"/ 月",reply:"为“{q}”找到的最佳选择。",best:"最佳匹配",premium:"优质之选",budget:"超值之选",
+ why1:"成色极佳，卖家评分高，比市场价低 30%。",why2:"该价位品质最好，已验证正品。",why3:"最便宜的可靠选择，可快速发货。",wrong:"出错了，请重试。",
+ ph:["冬季黑色夹克","我需要棕粉色靴子","嗯，蓝色牛仔裤","呃，金色T恤","也许来件红色卫衣"]}
+};
+const FB_LANG = { zh:"zh-CN" };
+let lang = (() => {
+  try { const s = localStorage.getItem("findly_lang"); if (I18N[s]) return s; } catch(e){}
+  const n = (navigator.language || "en").slice(0,2).toLowerCase();
+  return I18N[n] ? n : "en";
+})();
+function t(k, v){
+  let s = I18N[lang][k] ?? I18N.en[k] ?? k;
+  if (v) for (const x in v) s = s.split("{"+x+"}").join(v[x]);
+  return s;
+}
+
+/* ==== ПОДСВЕТКА: ТОЛЬКО ТРЕНДОВЫЕ ЦВЕТА ============================= */
+// Любой цвет из запроса превращается в одну модную «именную» краску
+// (алый, голубой, кофейный, тиффани…). Никаких радужных градиентов.
 const COLOR_PALETTES = [
-  { keys: ['red', 'crimson', 'scarlet', 'burgundy', 'красн', 'бордов'], c1: '#e63946', c2: '#ff758f', bg: '#fff6f7' },
-  { keys: ['blue', 'navy', 'cyan', 'denim', 'син', 'голуб', 'джинс'], c1: '#2563eb', c2: '#38bdf8', bg: '#f4f8ff' },
-  { keys: ['pink', 'rose', 'magenta', 'розов', 'пудров'], c1: '#ec4899', c2: '#f472b6', bg: '#fff5fa' },
-  { keys: ['brown', 'tan', 'camel', 'beige', 'coffee', 'коричнев', 'бежев', 'кофейн'], c1: '#8d5b4c', c2: '#c08552', bg: '#fbf7f5' },
-  { keys: ['green', 'olive', 'emerald', 'mint', 'зелен', 'зелён', 'оливк', 'хаки'], c1: '#16a34a', c2: '#4ade80', bg: '#f4fbf6' },
-  { keys: ['yellow', 'gold', 'mustard', 'желт', 'жёлт', 'золот'], c1: '#d97706', c2: '#fbbf24', bg: '#fffcf2' },
-  { keys: ['orange', 'peach', 'coral', 'оранжев', 'персик'], c1: '#ea580c', c2: '#fb923c', bg: '#fff7f2' },
-  { keys: ['purple', 'violet', 'lilac', 'lavender', 'фиолетов', 'сиренев'], c1: '#7c3aed', c2: '#c084fc', bg: '#f8f5ff' },
-  { keys: ['black', 'dark', 'charcoal', 'черн', 'чёрн', 'темн'], c1: '#27272a', c2: '#71717a', bg: '#f4f4f5' },
-  { keys: ['white', 'cream', 'ivory', 'бел', 'кремов', 'молочн'], c1: '#64748b', c2: '#94a3b8', bg: '#f8fafc' },
-  { keys: ['grey', 'gray', 'silver', 'сер', 'серебр'], c1: '#4b5563', c2: '#9ca3af', bg: '#f6f7f9' }
+  { name:'scarlet', keys:['red','scarlet','crimson','алы','алая','алое','алые','красн','кармин','червон','roj','roug','rot','红'], c1:'#d6334a', c2:'#f0a3ad', bg:'#fff8f8' },
+  { name:'sky', group:'blue', pref:true, keys:['sky','baby','голуб','блакит','celest','ciel','hellblau','天蓝','浅蓝'], c1:'#4aa8e0', c2:'#a9d8f5', bg:'#f6fbff' },
+  { name:'denim', group:'blue', keys:['blue','navy','denim','син','azul','bleu','blau','蓝'], c1:'#3f6fb5', c2:'#9db8e0', bg:'#f7f9fd' },
+  { name:'tiffany', keys:['tiffany','тиффани','тифани','мят','mint','cyan','turquoise','teal','бирюз','menta','menthe','minze','türkis','薄荷','青绿'], c1:'#1fb5ad', c2:'#9fe0da', bg:'#f4fcfb' },
+  { name:'coffee', keys:['brown','tan','camel','beige','coffee','mocha','latte','cappuccino','chocolate','коричнев','бежев','кофе','мокко','капучино','шоколад','каві','marr','café','cafe','kaffee','braun','咖啡','棕'], c1:'#7a5640', c2:'#c7a58b', bg:'#fbf8f5' },
+  { name:'butter', keys:['yellow','gold','mustard','butter','желт','жёлт','золот','жовт','amarill','jaune','gelb','doré','dore','金','黄'], c1:'#d9a921', c2:'#f2dc8c', bg:'#fffdf4' },
+  { name:'matcha', keys:['green','olive','emerald','sage','зелен','зелён','оливк','хаки','шалфей','verde','vert','grün','gruen','绿'], c1:'#7a9a63', c2:'#bcd2ab', bg:'#f9fbf6' },
+  { name:'lilac', keys:['purple','violet','lilac','lavender','фиолетов','сиренев','лаванд','фіолет','morad','violett','lila','紫'], c1:'#9a82d6', c2:'#cfc2ee', bg:'#faf8ff' },
+  { name:'rose', keys:['pink','rose','magenta','розов','пудров','рожев','rosa','粉'], c1:'#e0829f', c2:'#f4c3d2', bg:'#fff8fb' },
+  { name:'cherry', keys:['burgundy','cherry','wine','bordeaux','burdeos','бордов','вишн','винн'], c1:'#8e2f42', c2:'#cf8f9b', bg:'#fdf7f8' },
+  { name:'terracotta', keys:['orange','peach','coral','terracotta','оранжев','персик','коралл','терракот','помаранч','naranja','橙'], c1:'#cf7048', c2:'#efb99d', bg:'#fff8f4' },
+  { name:'graphite', keys:['black','dark','charcoal','graphite','черн','чёрн','темн','графит','чорн','negr','noir','schwarz','黑'], c1:'#2d2d30', c2:'#9a9aa0', bg:'#f7f7f8' },
+  { name:'cream', keys:['white','cream','ivory','бел','кремов','молочн','біл','blanc','weiß','weiss','白'], c1:'#a89c88', c2:'#dcd3c4', bg:'#fdfbf7' },
+  { name:'stone', keys:['grey','gray','silver','сер','серебр','сір','gris','grau','灰','银'], c1:'#868a90', c2:'#c6c9cd', bg:'#f8f8f9' }
 ];
+const byName = n => COLOR_PALETTES.find(p => p.name === n);
+const NEUTRAL = { c1:'#1d1d1f', c2:'#8e8e93', bg:'#ffffff', k:.3 };
 
-function hexToRgba(hex, alpha) {
-  const clean = hex.replace('#', '');
-  const r = parseInt(clean.substring(0, 2), 16);
-  const g = parseInt(clean.substring(2, 4), 16);
-  const b = parseInt(clean.substring(4, 6), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+function hexToRgba(hex, a){
+  const h = hex.replace('#','');
+  return `rgba(${parseInt(h.slice(0,2),16)}, ${parseInt(h.slice(2,4),16)}, ${parseInt(h.slice(4,6),16)}, ${a})`;
 }
 
-function applySoftTheme(c1, c2, bgTint, bubbleColor) {
-  const root = document.documentElement;
-  root.style.setProperty('--accent-1', c1);
-  root.style.setProperty('--accent-2', c2);
-  root.style.setProperty('--accent-3', c1);
-  root.style.setProperty('--bg', bgTint || '#ffffff');
-  root.style.setProperty('--user-bubble', bubbleColor || c1);
-  // Мягкое цветное облако на фоне (не кислотное, приятное глазу)
-  root.style.setProperty('--glow-1', hexToRgba(c1, 0.22));
-  root.style.setProperty('--glow-2', hexToRgba(c2, 0.18));
-  root.style.setProperty('--glow-3', hexToRgba(c1, 0.14));
+function applySoftTheme(c1, c2, bg, k = 1){
+  const r = document.documentElement.style;
+  r.setProperty('--accent-1', c1);
+  r.setProperty('--accent-2', c2);
+  r.setProperty('--accent-3', c1);
+  r.setProperty('--bg', bg || '#ffffff');
+  r.setProperty('--glow-1', hexToRgba(c1, .10 * k));
+  r.setProperty('--glow-2', hexToRgba(c2, .30 * k));
+  r.setProperty('--glow-3', hexToRgba(c1, .06 * k));
 }
 
-function analyzeQueryColors(query) {
+function analyzeQueryColors(query){
   const q = query.toLowerCase();
-  const matched = [];
-
-  for (const palette of COLOR_PALETTES) {
-    if (palette.keys.some(k => q.includes(k))) {
-      matched.push(palette);
+  const words = [...q.matchAll(/\p{L}+/gu)].map(m => ({ w:m[0], i:m.index }));
+  const byGroup = new Map();
+  for (const p of COLOR_PALETTES){
+    let pos = -1;
+    for (const k of p.keys){
+      let i = -1;
+      if (/[\u4e00-\u9fff]/.test(k)) i = q.indexOf(k);
+      else { const m = words.find(x => x.w.startsWith(k)); if (m) i = m.i; }
+      if (i >= 0 && (pos < 0 || i < pos)) pos = i;
     }
+    if (pos < 0) continue;
+    const g = p.group || p.name, old = byGroup.get(g);
+    if (!old || (p.pref && !old.p.pref)) byGroup.set(g, { p, pos });   // «sky blue» = один голубой, не два цвета
   }
-
-  // Если найдено 2 цвета (например "brown pink" или "red blue") — делаем микс
-  if (matched.length >= 2) {
-    return {
-      c1: matched[0].c1,
-      c2: matched[1].c1,
-      bg: matched[0].bg,
-      bubble: matched[0].c1,
-      found: true
-    };
-  }
-
-  // Если найден 1 цвет (например "jeans red" -> красный, "t-shirt blue" -> синий)
-  if (matched.length === 1) {
-    return {
-      c1: matched[0].c1,
-      c2: matched[0].c2,
-      bg: matched[0].bg,
-      bubble: matched[0].c1,
-      found: true
-    };
-  }
-
-  // Если цвет не указан явно, подбираем стильную спокойную тему по типу одежды
-  if (q.includes('samba') || q.includes('sneaker') || q.includes('shoe') || q.includes('кроссов')) {
-    return { c1: '#8d5b4c', c2: '#e5989b', bg: '#fbf7f6', bubble: '#6d4c41', found: false };
-  }
-  if (q.includes('jacket') || q.includes('coat') || q.includes('куртк')) {
-    return { c1: '#b45309', c2: '#f59e0b', bg: '#fffbeb', bubble: '#92400e', found: false };
-  }
-
-  // Базовая свежая тема
-  return { c1: '#7c5cff', c2: '#22d3ee', bg: '#ffffff', bubble: '#1d1d1f', found: false };
+  const hits = [...byGroup.values()].sort((a,b) => a.pos - b.pos);
+  if (hits.length >= 2) return { c1:hits[0].p.c1, c2:hits[1].p.c1, bg:hits[0].p.bg, k:1 };
+  if (hits.length === 1) return { ...hits[0].p, k:1 };
+  if (/samba|sneaker|shoe|кроссов/.test(q)) return { ...byName('coffee'), k:1 };
+  if (/jacket|coat|куртк/.test(q))          return { ...byName('stone'), k:1 };
+  return NEUTRAL;   // цвет не назван — спокойный чёрно-белый сайт
 }
 
-/* ==== ПОИСК ========================================================= */
+/* ==== ПОИСК (демо) ================================================== */
 async function askFindly(query){
-  // Сразу плавно меняем атмосферу сайта под запрос пользователя
-  const theme = analyzeQueryColors(query);
-  applySoftTheme(theme.c1, theme.c2, theme.bg, theme.bubble);
-
+  const th = analyzeQueryColors(query);
+  applySoftTheme(th.c1, th.c2, th.bg, th.k);
   await new Promise(r => setTimeout(r, CONFIG.fakeDelayMs));
-
   return {
-    reply: `Here are the best picks for “${query}”.`,
+    reply: t('reply', { q:query }),
     items: [
-      { title:`${query} — Best Match`, price:54, source:"Vinted", score:96, why:"Great condition, top-rated seller, priced 30% below market.", url:"#", emoji:"✨", c1:theme.c1, c2:theme.c2, bg:theme.bg },
-      { title:`${query} — Premium Pick`, price:82, source:"eBay", score:91, why:"Best build quality in this range, verified authentic.", url:"#", emoji:"🏷️", c1:theme.c2, c2:theme.c1, bg:theme.bg },
-      { title:`${query} — Budget Deal`, price:36, source:"OLX", score:85, why:"Cheapest solid option, fast shipping available.", url:"#", emoji:"📦", c1:theme.c1, c2:theme.c2, bg:theme.bg }
+      { title:`${query} — ${t('best')}`,    price:54, source:"Vinted", score:96, why:t('why1'), url:"#", emoji:"✨" },
+      { title:`${query} — ${t('premium')}`, price:82, source:"eBay",   score:91, why:t('why2'), url:"#", emoji:"🏷️" },
+      { title:`${query} — ${t('budget')}`,  price:36, source:"OLX",    score:85, why:t('why3'), url:"#", emoji:"📦" }
     ]
   };
 }
 
-const $ = id => document.getElementById(id);
 const landing = $("landing"), chat = $("chat");
 const messages = $("messages"), form = $("form"), input = $("input"), sendBtn = $("sendBtn");
 
-function showChat(){
-  landing.classList.add("hidden");
-  chat.classList.remove("hidden");
-  setTimeout(() => input.focus(), 500);
-}
-function showLanding(){
-  chat.classList.add("hidden");
-  landing.classList.remove("hidden");
-}
+function showChat(){ landing.classList.add("hidden"); chat.classList.remove("hidden"); setTimeout(() => input.focus(), 500); }
+function showLanding(){ chat.classList.add("hidden"); landing.classList.remove("hidden"); }
 
-function esc(s){
-  return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-}
+function esc(s){ return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 function scrollDown(){ messages.scrollTop = messages.scrollHeight; }
 
 function addUserMsg(text){
   const el = document.createElement("div");
-  el.className = "msg user";
-  el.textContent = text;
-  messages.appendChild(el);
-  scrollDown();
+  el.className = "msg user"; el.textContent = text;
+  messages.appendChild(el); scrollDown();
 }
-
 function addThinking(){
   const el = document.createElement("div");
   el.className = "msg ai";
   el.innerHTML = '<div class="typing"><i></i><i></i><i></i></div>';
-  messages.appendChild(el);
-  scrollDown();
+  messages.appendChild(el); scrollDown();
   return el;
 }
-
 function cardHTML(item){
-  const c1 = esc(item.c1 || "#7c5cff");
-  const c2 = esc(item.c2 || "#22d3ee");
-  const bg = esc(item.bg || "#ffffff");
   return `
-    <a class="card" href="${esc(item.url || "#")}" target="_blank" rel="noopener"
-       onmouseenter="applySoftTheme('${c1}', '${c2}', '${bg}', '${c1}')">
+    <a class="card" href="${esc(item.url || "#")}" target="_blank" rel="noopener">
       <div class="thumb">${esc(item.emoji || "🛍️")}</div>
       <div class="info">
         <div class="title">${esc(item.title)}</div>
@@ -508,10 +580,8 @@ function cardHTML(item){
       </div>
     </a>`;
 }
-
 function fillAiMsg(el, data){
-  const cards = (data.items || []).map(cardHTML).join("");
-  el.innerHTML = `<div>${esc(data.reply || "")}</div><div class="cards">${cards}</div>`;
+  el.innerHTML = `<div>${esc(data.reply || "")}</div><div class="cards">${(data.items || []).map(cardHTML).join("")}</div>`;
   scrollDown();
 }
 
@@ -519,112 +589,101 @@ let busy = false;
 async function handleSend(text){
   if (busy || !text.trim()) return;
   busy = true; sendBtn.disabled = true;
-
-  const hero = $("hero");
-  if (hero) hero.remove();
-
+  const hero = $("hero"); if (hero) hero.remove();
   addUserMsg(text);
   const aiEl = addThinking();
-
-  try{
-    const data = await askFindly(text);
-    fillAiMsg(aiEl, data);
-  }catch(err){
-    console.error(err);
-    aiEl.textContent = "Something went wrong. Please try again.";
-  }finally{
-    busy = false; sendBtn.disabled = false; input.focus();
-  }
+  try { fillAiMsg(aiEl, await askFindly(text)); }
+  catch(err){ console.error(err); aiEl.textContent = t('wrong'); }
+  finally { busy = false; sendBtn.disabled = false; input.focus(); }
 }
 
-/* ==== ПЛАВНАЯ СМЕНА ПОДСКАЗОК В ПОЛЕ ВВОДА ========================= */
+/* ==== ПОДСКАЗКИ В ПОЛЕ ВВОДА ======================================== */
 const ph = $("ph");
 let phIndex = 0;
-ph.textContent = CONFIG.placeholders[0];
-ph.classList.add("in");
-
+const phList = () => I18N[lang].ph;
 function syncPh(){ ph.classList.toggle("hide", input.value.length > 0); }
 input.addEventListener("input", syncPh);
-
 setInterval(() => {
   if (document.activeElement === input || input.value) return;
-  phIndex = (phIndex + 1) % CONFIG.placeholders.length;
+  phIndex = (phIndex + 1) % phList().length;
   ph.classList.remove("in"); ph.classList.add("leave");
   setTimeout(() => {
-    ph.textContent = CONFIG.placeholders[phIndex];
+    ph.textContent = phList()[phIndex];
     ph.classList.remove("leave"); void ph.offsetWidth; ph.classList.add("in");
   }, 320);
 }, CONFIG.placeholderEveryMs);
 
-/* ==== СОСТОЯНИЕ И FIRESTORE ======================================== */
+/* ==== СОСТОЯНИЕ И FIRESTORE ========================================= */
 const GUEST_KEY = "findly_guest_used";
-let state = { used: 0, user: null, plus: false };
+let state = { used:0, user:null, plus:false };
+let pendingUser = null;   // зарегистрирован, но почта не подтверждена
 
-try { state.used = parseInt(localStorage.getItem(GUEST_KEY) || "0", 10) || 0; } catch(e){}
+function readLocal(){ try { return parseInt(localStorage.getItem(GUEST_KEY) || "0", 10) || 0; } catch(e){ return 0; } }
+state.used = readLocal();
 
 async function saveState(){
-  if (state.user && window.firebaseDb) {
-    const { doc, setDoc } = window.dbFns;
-    const docRef = doc(window.firebaseDb, "profiles", state.user.uid);
-    await setDoc(docRef, {
-      email: state.user.email,
-      used: state.used,
-      plus: state.plus
-    }, { merge: true });
-  } else {
-    try { localStorage.setItem(GUEST_KEY, String(state.used)); } catch(e){}
+  // счётчик всегда дублируем локально — выход из аккаунта его не обнуляет
+  try { localStorage.setItem(GUEST_KEY, String(state.used)); } catch(e){}
+  if (state.user && window.firebaseDb){
+    try {
+      const { doc, setDoc } = window.dbFns;
+      await setDoc(doc(window.firebaseDb, "profiles", state.user.uid),
+        { email:state.user.email, used:state.used, plus:state.plus }, { merge:true });
+    } catch(e){ console.error(e); }
   }
 }
 
 async function loadUserProfile(authUser){
-  if (!authUser) {
-    state.user = null;
-    state.plus = false;
-    state.used = parseInt(localStorage.getItem(GUEST_KEY) || "0", 10) || 0;
-    updateUI();
-    return;
+  pendingUser = (authUser && !authUser.emailVerified) ? authUser : null;
+  if (!authUser || pendingUser){
+    state.user = null; state.plus = false; state.used = readLocal();
+    updateUI(); return;
   }
-
-  state.user = { uid: authUser.uid, email: authUser.email };
-  
-  if (window.firebaseDb) {
-    const { doc, getDoc } = window.dbFns;
-    const docRef = doc(window.firebaseDb, "profiles", authUser.uid);
-    const docSnap = await getDoc(docRef);
-    
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      const syncedUsed = Math.max(data.used || 0, state.used);
-      state.used = syncedUsed;
-      state.plus = !!data.plus;
-      if (syncedUsed !== data.used) await saveState();
-    } else {
-      await saveState();
-    }
+  state.user = { uid:authUser.uid, email:authUser.email };
+  state.used = readLocal();
+  if (window.firebaseDb){
+    try {
+      const { doc, getDoc } = window.dbFns;
+      const snap = await getDoc(doc(window.firebaseDb, "profiles", authUser.uid));
+      if (snap.exists()){
+        const d = snap.data();
+        state.used = Math.max(d.used || 0, state.used);
+        state.plus = !!d.plus;
+      }
+    } catch(e){ console.error(e); }
   }
+  await saveState();
   updateUI();
 }
 
 const checkAuthInterval = setInterval(() => {
-  if (window.firebaseAuth && window.authFns) {
+  if (window.firebaseAuth && window.authFns){
     clearInterval(checkAuthInterval);
-    window.authFns.onAuthStateChanged(window.firebaseAuth, user => {
-      loadUserProfile(user);
-    });
+    window.firebaseAuth.languageCode = FB_LANG[lang] || lang;
+    window.authFns.onAuthStateChanged(window.firebaseAuth, user => loadUserProfile(user));
   }
 }, 100);
 
-function limit(){ return state.plus ? Infinity : (state.user ? CONFIG.freeWithAccount : CONFIG.freeGuest); }
+function limit(){ return state.plus ? Infinity : CONFIG.freeTotal; }
 function left(){ return Math.max(0, limit() - state.used); }
 function canSearch(){ return left() > 0; }
 
 function updateUI(){
-  $("counter").textContent = state.plus ? "Plus ∞" : left() + " free left";
-  $("accountBtn").textContent = state.user ? state.user.email.split("@")[0] : "Sign in";
+  $("counter").textContent = state.plus ? "Plus ∞" : t('free', { n:left() });
+  $("accountBtn").textContent = state.user ? state.user.email.split("@")[0] : (pendingUser ? t('verifyEmail') : t('signIn'));
 }
 
-function openModal(id){
-  if (id === "authModal") $("authNote").textContent = `Save your account & get ${CONFIG.freeWithAccount} free searches.`;
+/* ==== МОДАЛКИ ======================================================= */
+function showAuthStep(step){
+  $("authStep").hidden = step !== "form";
+  $("verifyStep").hidden = step !== "verify";
+  if (step === "verify"){ $("verifyText").textContent = t('verifySent', { email:pendingUser.email }); $("verifyErr").textContent = ""; }
+}
+function openModal(id, note){
+  if (id === "authModal"){
+    $("authNote").textContent = note ? t(note) : "";
+    showAuthStep(pendingUser ? "verify" : "form");
+  }
   $(id).classList.add("show");
 }
 function closeModal(id){ $(id).classList.remove("show"); }
@@ -632,73 +691,131 @@ document.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click
 document.querySelectorAll(".overlay").forEach(o => o.addEventListener("click", e => { if (e.target === o) closeModal(o.id); }));
 
 function openGate(){
-  if (!state.user) openModal("authModal");
-  else openModal("payModal");
+  if (state.user) openModal("payModal");
+  else openModal("authModal", "gateNote");
 }
 
-/* ==== РЕГИСТРАЦИЯ И ВХОД ЧЕРЕЗ FIREBASE AUTH ======================= */
+/* ==== РЕГИСТРАЦИЯ + ПОДТВЕРЖДЕНИЕ ПОЧТЫ ============================= */
 let authMode = "signup";
-
-async function registerUser(email, password, mode){
-  const { createUserWithEmailAndPassword, signInWithEmailAndPassword } = window.authFns;
-  let res;
-  if (mode === "signup") {
-    res = await createUserWithEmailAndPassword(window.firebaseAuth, email, password);
-  } else {
-    res = await signInWithEmailAndPassword(window.firebaseAuth, email, password);
-  }
-  return res.user;
-}
 
 function setAuthMode(m){
   authMode = m;
-  $("authTitle").textContent  = m === "signup" ? "Create your account" : "Welcome back";
-  $("authSubmit").textContent = m === "signup" ? "Create account" : "Sign in";
-  $("authSwitch").textContent = m === "signup" ? "Already have an account? Sign in" : "New here? Create account";
+  $("authTitle").textContent  = t(m === "signup" ? 'createTitle' : 'signinTitle');
+  $("authSubmit").textContent = t(m === "signup" ? 'create' : 'signinBtn');
+  $("authSwitch").textContent = t(m === "signup" ? 'toSignin' : 'toSignup');
   $("authPass").autocomplete  = m === "signup" ? "new-password" : "current-password";
 }
-
 $("authSwitch").addEventListener("click", () => setAuthMode(authMode === "signup" ? "signin" : "signup"));
+
+function authErrorText(ex){
+  const c = ex && ex.code || "";
+  if (c.includes("email-already-in-use")) return t('exists');
+  if (/invalid-credential|wrong-password|user-not-found|invalid-login/.test(c)) return t('badCred');
+  if (c.includes("too-many-requests")) return t('tooMany');
+  return t('generic');
+}
+
+async function sendVerification(user){
+  window.firebaseAuth.languageCode = FB_LANG[lang] || lang;
+  await window.authFns.sendEmailVerification(user);
+}
 
 $("authForm").addEventListener("submit", async e => {
   e.preventDefault();
   const email = $("authEmail").value.trim(), pass = $("authPass").value, err = $("authError");
-  if (!/^\S+@\S+\.\S+$/.test(email)) { err.textContent = "Enter a valid email."; return; }
-  if (pass.length < 8)              { err.textContent = "Password must be at least 8 characters."; return; }
+  if (!/^\S+@\S+\.\S+$/.test(email)) { err.textContent = t('badEmail'); return; }
+  if (pass.length < 8)               { err.textContent = t('shortPass'); return; }
   err.textContent = ""; $("authSubmit").disabled = true;
-  try{
-    const user = await registerUser(email, pass, authMode);
-    await loadUserProfile(user);
-    closeModal("authModal");
+  try {
+    const { createUserWithEmailAndPassword, signInWithEmailAndPassword } = window.authFns;
+    const res = authMode === "signup"
+      ? await createUserWithEmailAndPassword(window.firebaseAuth, email, pass)
+      : await signInWithEmailAndPassword(window.firebaseAuth, email, pass);
     $("authForm").reset();
-  }catch(ex){
-    err.textContent = ex.message || "Something went wrong.";
-  }finally{
+    if (!res.user.emailVerified){
+      pendingUser = res.user;
+      if (authMode === "signup") await sendVerification(res.user);
+      updateUI(); showAuthStep("verify");
+    } else {
+      await loadUserProfile(res.user);
+      closeModal("authModal");
+      if (!canSearch()) openModal("payModal");
+    }
+  } catch(ex){
+    err.textContent = authErrorText(ex);
+  } finally {
     $("authSubmit").disabled = false;
   }
 });
 
+$("verifyDone").addEventListener("click", async () => {
+  if (!pendingUser) return;
+  const err = $("verifyErr"); err.textContent = "";
+  try {
+    await pendingUser.reload();
+    if (!pendingUser.emailVerified){ err.textContent = t('verifyNo'); return; }
+    await pendingUser.getIdToken(true);
+    await loadUserProfile(pendingUser);
+    closeModal("authModal");
+    if (!canSearch()) openModal("payModal");
+  } catch(ex){ err.textContent = authErrorText(ex); }
+});
+
+$("verifyResend").addEventListener("click", async () => {
+  if (!pendingUser) return;
+  const b = $("verifyResend"), err = $("verifyErr");
+  b.disabled = true; setTimeout(() => b.disabled = false, 30000);
+  try { await sendVerification(pendingUser); err.textContent = t('verifyResent'); }
+  catch(ex){ err.textContent = authErrorText(ex); }
+});
+
+$("verifyOther").addEventListener("click", async () => {
+  await window.authFns.signOut(window.firebaseAuth);
+  pendingUser = null; setAuthMode("signup"); showAuthStep("form"); updateUI();
+});
+
 $("accountBtn").addEventListener("click", async () => {
-  if (state.user) {
-    if (confirm("Sign out?")) {
-      await window.authFns.signOut(window.firebaseAuth);
-      state.user = null;
-      state.plus = false;
-      state.used = 0;
-      localStorage.removeItem(GUEST_KEY);
-      updateUI();
-    }
+  if (state.user){
+    if (confirm(t('signOutQ'))) await window.authFns.signOut(window.firebaseAuth);
   } else openModal("authModal");
 });
 
-/* ==== ПОДПИСКА PLUS ================================================= */
+/* ==== ПОДПИСКА ====================================================== */
 async function startCheckout(){
+  // TODO: подключить реальную оплату (Stripe / Paddle). Сейчас — заглушка.
   state.plus = true;
   await saveState();
   updateUI();
   closeModal("payModal");
 }
 $("subscribeBtn").addEventListener("click", startCheckout);
+
+/* ==== ЯЗЫК ========================================================== */
+function applyLang(){
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-i18n]").forEach(el => el.textContent = t(el.dataset.i18n));
+  document.querySelectorAll("[data-i18n-ph]").forEach(el => el.placeholder = t(el.dataset.i18nPh));
+  $("brandBtn").title = t('home');
+  input.setAttribute("aria-label", t('hero'));
+  setAuthMode(authMode); updateUI();
+  if (pendingUser) $("verifyText").textContent = t('verifySent', { email:pendingUser.email });
+  if (window.firebaseAuth) window.firebaseAuth.languageCode = FB_LANG[lang] || lang;
+  phIndex = 0; ph.textContent = phList()[0]; ph.classList.remove("leave"); ph.classList.add("in");
+  document.querySelectorAll(".lang-menu button").forEach(b => b.classList.toggle("on", b.dataset.l === lang));
+}
+const menu = $("langMenu");
+Object.keys(I18N).forEach(code => {
+  const b = document.createElement("button");
+  b.dataset.l = code; b.textContent = I18N[code].name;
+  b.addEventListener("click", () => {
+    lang = code; try { localStorage.setItem("findly_lang", code); } catch(e){}
+    applyLang(); menu.hidden = true;
+  });
+  menu.appendChild(b);
+});
+$("langBtn").addEventListener("click", e => { e.stopPropagation(); menu.hidden = !menu.hidden; });
+document.addEventListener("click", e => { if (!$("lang").contains(e.target)) menu.hidden = true; });
+document.addEventListener("keydown", e => { if (e.key === "Escape") menu.hidden = true; });
 
 /* ==== СОБЫТИЯ ======================================================= */
 $("startBtn").addEventListener("click", showChat);
@@ -717,8 +834,7 @@ form.addEventListener("submit", async e => {
 });
 
 $("planPrice").textContent = CONFIG.price;
-setAuthMode("signup");
-updateUI();
+applyLang();
 </script>
 </body>
 </html>
